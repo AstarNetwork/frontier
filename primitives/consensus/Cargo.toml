@@ -9,11 +9,11 @@ homepage = "https://substrate.dev"
 repository = "https://github.com/paritytech/frontier/"
 
 [dependencies]
-sp-std = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11" }
-sp-runtime = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11" }
-sp-core = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11" }
+sp-std = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", tag = "monthly-2021-11" }
+sp-runtime = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", tag = "monthly-2021-11" }
+sp-core = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", tag = "monthly-2021-11" }
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
-ethereum = { git = "https://github.com/PlasmNetwork/ethereum", branch = "polkadot-v0.9.11", default-features = false, features = ["with-codec"] }
+ethereum = { git = "https://github.com/CocDap/ethereum", branch="5ire-11", default-features = false, features = ["with-codec"] }
 rlp = { version = "0.5", default-features = false }
 sha3 = { version = "0.8", default-features = false }
 

@@ -10,17 +10,17 @@ license = "Apache-2.0"
 rustc-hex = { version = "2.1.0", default-features = false }
 serde = { version = "1.0.101", optional = true }
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false }
-frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11" }
-frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11" }
-pallet-balances = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11" }
-pallet-timestamp = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11" }
+frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", tag = "monthly-2021-11" }
+frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", tag = "monthly-2021-11" }
+pallet-balances = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", tag = "monthly-2021-11" }
+pallet-timestamp = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", tag = "monthly-2021-11" }
 pallet-evm = { version = "6.0.0-dev", default-features = false, path = "../evm" }
-sp-runtime = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11" }
-sp-std = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11" }
-sp-io = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11" }
+sp-runtime = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", tag = "monthly-2021-11" }
+sp-std = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", tag = "monthly-2021-11" }
+sp-io = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate", tag = "monthly-2021-11" }
 fp-evm = { version = "3.0.0-dev", default-features = false, path = "../../primitives/evm" }
-evm = { git = "https://github.com/PlasmNetwork/evm", branch = "polkadot-v0.9.11", features = ["with-codec"], default-features = false }
-ethereum = { git = "https://github.com/PlasmNetwork/ethereum", branch = "polkadot-v0.9.11", default-features = false, features = ["with-codec"] }
+evm = { git = "https://github.com/CocDap/evm",branch="sp-release-032" , features = ["with-codec"], default-features = false }
+ethereum = { git = "https://github.com/CocDap/ethereum", branch="5ire-11", default-features = false, features = ["with-codec"] }
 ethereum-types = { version = "0.12", default-features = false }
 rlp = { version = "0.5", default-features = false }
 sha3 = { version = "0.8", default-features = false }
@@ -31,7 +31,7 @@ fp-self-contained = { version = "1.0.0-dev", path = "../../primitives/self-conta
 scale-info = { version = "1.0.0", default-features = false, features = ["derive"] }
 
 [dev-dependencies]
-sp-core = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11" }
+sp-core = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", tag = "monthly-2021-11" }
 libsecp256k1 = { version = "0.5", features = ["static-context", "hmac"] }
 
 [features]
