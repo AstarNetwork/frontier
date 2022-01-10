@@ -13,29 +13,29 @@ jsonrpc-core-client = "18.0"
 jsonrpc-pubsub = "18.0"
 log = "0.4.8"
 ethereum-types = "0.12"
-evm = { git = "https://github.com/PlasmNetwork/evm", branch = "polkadot-v0.9.12" }
+evm = { git = "https://github.com/PlasmNetwork/evm", branch = "polkadot-v0.9.13" }
 fc-consensus = { version = "2.0.0-dev", path = "../consensus" }
 fc-db = { version = "2.0.0-dev", path = "../db" }
 fc-rpc-core = { version = "1.1.0-dev", path = "../rpc-core" }
 fp-consensus = { version = "2.0.0-dev", path = "../../primitives/consensus" }
 fp-rpc = { version = "3.0.0-dev", path = "../../primitives/rpc" }
 fp-storage = { version = "2.0.0-dev", path = "../../primitives/storage"}
-sp-io = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sp-runtime = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sp-api = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sp-transaction-pool = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sc-transaction-pool = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sp-storage = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sp-blockchain = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sc-transaction-pool-api = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sc-service = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sc-client-api = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sc-rpc = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sc-network = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
+sp-io = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sp-runtime = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sp-api = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sp-transaction-pool = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sc-transaction-pool = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sp-storage = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sp-blockchain = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sc-transaction-pool-api = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sc-service = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sc-client-api = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sc-rpc = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
+sc-network = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.13" }
 pallet-evm = { version = "6.0.0-dev", path = "../../frame/evm" }
 fp-evm = { version = "3.0.0-dev", path = "../../primitives/evm" }
 pallet-ethereum = { version = "4.0.0-dev", path = "../../frame/ethereum" }
-ethereum = { git = "https://github.com/PlasmNetwork/ethereum", branch = "polkadot-v0.9.12", features = ["with-codec"] }
+ethereum = { git = "https://github.com/PlasmNetwork/ethereum", branch = "polkadot-v0.9.13", features = ["with-codec"] }
 codec = { package = "parity-scale-codec", version = "2.2.0" }
 rlp = "0.5"
 futures = { version = "0.3.1", features = ["compat"] }
