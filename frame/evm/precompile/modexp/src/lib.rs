@@ -44,7 +44,10 @@ fn calculate_gas_cost(
 			words += 1;
 		}
 
-		// TODO: prevent/handle overflow
+		// Note: can't overflow because we take words to be some u64 value / 8, which is
+		// necessarily less than sqrt(u64::MAX).
+		// Additionally, both base_length and mod_length are bounded to 1024, so this has
+		// an upper bound of roughly (1024 / 8) squared
 		words * words
 	}
 
@@ -60,8 +63,17 @@ fn calculate_gas_cost(
 			let bytes: [u8; 32] = [0xFF; 32];
 			let max_256_bit_uint = BigUint::from_bytes_be(&bytes);
 
+			// from the EIP spec:
+			// (8 * (exp_length - 32)) + ((exponent & (2**256 - 1)).bit_length() - 1)
+			//
+			// Notes:
+			// * exp_length is bounded to 1024 and is > 32
+			// * exponent can be zero, so we subtract 1 after adding the other terms (whose sum
+			//   must be > 0)
+			// * the addition can't overflow because the terms are both capped at roughly
+			//   8 * max size of exp_length (1024)
 			iteration_count =
-				(8 * (exp_length - 32)) + ((exponent.bitand(max_256_bit_uint)).bits() - 1);
+				(8 * (exp_length - 32)) + exponent.bitand(max_256_bit_uint).bits() - 1;
 		}
 
 		max(iteration_count, 1)
@@ -86,7 +98,7 @@ fn calculate_gas_cost(
 // 6) modulus, size as described above
 //
 //
-// NOTE: input sizes are arbitrarily large (up to 256 bits), with the expectation
+// NOTE: input sizes are bound to 1024 bytes, with the expectation
 //       that gas limits would be applied before actual computation.
 //
 //       maximum stack size will also prevent abuse.
@@ -396,5 +408,40 @@ mod tests {
 				panic!("Modexp::execute() returned error"); // TODO: how to pass error on?
 			}
 		}
+	}
+
+	#[test]
+	fn test_zero_exp_with_33_length() {
+		// This is a regression test which ensures that the 'iteration_count' calculation
+		// in 'calculate_iteration_count' cannot underflow.
+		//
+		// In debug mode, this underflow could cause a panic. Otherwise, it causes N**0 to
+		// be calculated at more-than-normal expense.
+		//
+		// TODO: cite security advisory
+
+		let input = vec![
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+		];
+
+		let cost: u64 = 100000;
+
+		let context: Context = Context {
+			address: Default::default(),
+			caller: Default::default(),
+			apparent_value: From::from(0),
+		};
+
+		let precompile_result = Modexp::execute(&input, Some(cost), &context)
+			.expect("Modexp::execute() returned error");
+
+		assert_eq!(precompile_result.output.len(), 1); // should be same length as mod
+		let result = BigUint::from_bytes_be(&precompile_result.output[..]);
+		let expected = BigUint::parse_bytes(b"0", 10).unwrap();
+		assert_eq!(result, expected);
 	}
 }
