@@ -199,7 +199,7 @@ where
 							Default::default(),
 							Some(eth_hash),
 							full,
-							None,
+							base_fee,
 						)))
 					} else {
 						Ok(None)
