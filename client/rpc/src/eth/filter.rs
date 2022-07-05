@@ -373,6 +373,8 @@ where
 		let backend = Arc::clone(&self.backend);
 		let max_past_logs = self.max_past_logs;
 
+		log::info!(">>eth_getLogs(1): called with filter: {:?}", filter);
+
 		let mut ret: Vec<Log> = Vec::new();
 		if let Some(hash) = filter.block_hash {
 			let id = match frontier_backend_client::load_hash::<B>(backend.as_ref(), hash)
@@ -412,6 +414,8 @@ where
 				.and_then(|v| v.to_min_block_num())
 				.map(|s| s.unique_saturated_into())
 				.unwrap_or(client.info().best_number);
+
+			log::info!(">>eth_getLogs(2): for range from({:?}) to({:?})", from_number, current_number);
 
 			let _ = filter_range_logs(
 				client.as_ref(),
@@ -474,12 +478,15 @@ where
 			}
 		}
 	}
+	log::info!(">>eth_getLogs(3): schema loaded from cache: {:?}", local_cache);
+
 	let cache_keys: Vec<NumberFor<B>> = local_cache.keys().cloned().collect();
 	let mut default_schema: Option<&EthereumStorageSchema> = None;
 	if cache_keys.len() == 1 {
 		// There is only one schema and that's the one we use.
 		default_schema = local_cache.get(&cache_keys[0]);
 	}
+	log::info!(">>eth_getLogs(4): default schema is {:?}", default_schema);
 
 	while current_number <= to {
 		let id = BlockId::Number(current_number);
@@ -501,6 +508,7 @@ where
 						default_schema = local_cache.get(&cache_keys[i - 1]);
 					}
 				}
+				log::info!(">>eth_getLogs(5_{}): default schema for current number {:?} is {:?}", current_number, current_number, default_schema);
 				match default_schema {
 					Some(schema) => *schema,
 					// Fallback to DB read. This will happen i.e. when there is no cache
@@ -512,6 +520,8 @@ where
 
 		let block = block_data_cache.current_block(schema, substrate_hash).await;
 
+		log::info!(">>eth_getLogs(5_{}): for schema {:?} and block number {:?}, read block {:?}", current_number, schema, id, block);
+
 		if let Some(block) = block {
 			if FilteredParams::address_in_bloom(block.header.logs_bloom, &address_bloom_filter)
 				&& FilteredParams::topics_in_bloom(block.header.logs_bloom, &topics_bloom_filter)
@@ -519,6 +529,7 @@ where
 				let statuses = block_data_cache
 					.current_transaction_statuses(schema, substrate_hash)
 					.await;
+				log::info!(">>eth_getLogs(5_{}): for schema {:?} and block number {:?}, read block {:?}", current_number, schema, id, block);
 				if let Some(statuses) = statuses {
 					filter_block_logs(ret, filter, block, statuses);
 				}
@@ -526,12 +537,14 @@ where
 		}
 		// Check for restrictions
 		if ret.len() as u32 > max_past_logs {
+			log::info!(">>eth_getLogs(5_{}): Too many results in query!", current_number);
 			return Err(internal_err(format!(
 				"query returned more than {} results",
 				max_past_logs
 			)));
 		}
 		if begin_request.elapsed() > max_duration {
+			log::info!(">>eth_getLogs(5_{}): Query timeout!", current_number);
 			return Err(internal_err(format!(
 				"query timeout of {} seconds exceeded",
 				max_duration.as_secs()
