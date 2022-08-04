@@ -33,7 +33,7 @@ use fc_rpc_core::types::*;
 use fp_rpc::EthereumRuntimeRPCApi;
 
 use crate::{
-	eth::{rich_block_build, Eth, EthConfig},
+	eth::{empty_block_from, rich_block_build, Eth, EthConfig},
 	frontier_backend_client, internal_err,
 };
 
@@ -152,7 +152,24 @@ where
 
 						Ok(Some(rich_block))
 					}
-					_ => Ok(None),
+					_ => {
+						if let BlockNumber::Num(block_number) = number {
+							let eth_block = empty_block_from(block_number.into());
+							let eth_hash = H256::from_slice(
+								keccak_256(&rlp::encode(&eth_block.header)).as_slice(),
+							);
+							Ok(Some(rich_block_build(
+								eth_block,
+								Default::default(),
+								Some(eth_hash),
+								full,
+								None,
+								false,
+							)))
+						} else {
+							Ok(None)
+						}
+					}
 				}
 			}
 			None if number == BlockNumber::Pending => {
