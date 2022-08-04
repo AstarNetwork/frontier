@@ -27,13 +27,13 @@ use sc_transaction_pool_api::InPoolTransaction;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::hashing::keccak_256;
-use sp_runtime::traits::Block as BlockT;
+use sp_runtime::traits::{Zero, Block as BlockT};
 // Frontier
 use fc_rpc_core::types::*;
 use fp_rpc::EthereumRuntimeRPCApi;
 
 use crate::{
-	eth::{rich_block_build, Eth, EthConfig},
+	eth::{empty_block_from, rich_block_build, Eth, EthConfig},
 	frontier_backend_client, internal_err,
 };
 
@@ -152,7 +152,33 @@ where
 
 						Ok(Some(rich_block))
 					}
-					_ => Ok(None),
+					_ => {
+						// Fallback solution for an issue with Shiden where early blocks are missing.
+						let maybe_block_number = if let BlockNumber::Num(block_number) = number {
+							Some(block_number)
+						} else if let BlockNumber::Earliest = number {
+							Some(Zero::zero())
+						} else  {
+							None
+						};
+
+						if let Some(block_number) = maybe_block_number {
+							let eth_block = empty_block_from(block_number.into());
+							let eth_hash = H256::from_slice(
+								keccak_256(&rlp::encode(&eth_block.header)).as_slice(),
+							);
+							Ok(Some(rich_block_build(
+								eth_block,
+								Default::default(),
+								Some(eth_hash),
+								full,
+								None,
+								false,
+							)))
+						} else {
+							Ok(None)
+						}
+					}
 				}
 			}
 			None if number == BlockNumber::Pending => {
