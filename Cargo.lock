@@ -1447,7 +1447,7 @@ dependencies = [
  "futures",
  "kvdb-rocksdb",
  "log",
- "parity-db",
+ "parity-db 0.4.2",
  "parity-scale-codec",
  "parking_lot 0.12.1",
  "sc-block-builder",
@@ -4362,6 +4362,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "parity-db"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a7511a0bec4a336b5929999d02b560d2439c993cccf98c26481484e811adc43"
+dependencies = [
+ "blake2",
+ "crc32fast",
+ "fs2",
+ "hex",
+ "libc",
+ "log",
+ "lz4",
+ "memmap2",
+ "parking_lot 0.12.1",
+ "rand 0.8.5",
+ "snap",
+]
+
+[[package]]
 name = "parity-scale-codec"
 version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5342,7 +5361,7 @@ dependencies = [
  "kvdb-rocksdb",
  "linked-hash-map",
  "log",
- "parity-db",
+ "parity-db 0.3.17",
  "parity-scale-codec",
  "parking_lot 0.12.1",
  "sc-client-api",
