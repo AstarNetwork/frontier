@@ -1294,11 +1294,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11da94e443c60508eb62cf256243a64da87304c2802ac2528847f79d750007ef"
 dependencies = [
  "crunchy",
- "fixed-hash",
+ "fixed-hash 0.7.0",
  "impl-codec",
  "impl-rlp",
- "impl-serde",
+ "impl-serde 0.3.2",
  "scale-info",
+ "tiny-keccak",
+]
+
+[[package]]
+name = "ethbloom"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c22d4b5885b6aa2fe5e8b9329fb8d232bf739e434e6b87347c63bdd00c120f60"
+dependencies = [
+ "crunchy",
+ "fixed-hash 0.8.0",
+ "impl-rlp",
+ "impl-serde 0.4.0",
  "tiny-keccak",
 ]
 
@@ -1309,7 +1322,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23750149fe8834c0e24bb9adcbacbe06c45b9861f15df53e09f26cb7c4ab91ef"
 dependencies = [
  "bytes",
- "ethereum-types",
+ "ethereum-types 0.13.1",
  "hash-db",
  "hash256-std-hasher",
  "parity-scale-codec",
@@ -1327,13 +1340,27 @@ version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b2827b94c556145446fcce834ca86b7abf0c39a805883fe20e72c5bfdb5a0dc6"
 dependencies = [
- "ethbloom",
- "fixed-hash",
+ "ethbloom 0.12.1",
+ "fixed-hash 0.7.0",
  "impl-codec",
  "impl-rlp",
- "impl-serde",
- "primitive-types",
+ "impl-serde 0.3.2",
+ "primitive-types 0.11.1",
  "scale-info",
+ "uint",
+]
+
+[[package]]
+name = "ethereum-types"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81224dc661606574f5a0f28c9947d0ee1d93ff11c5f1c4e7272f52e8c0b5483c"
+dependencies = [
+ "ethbloom 0.13.0",
+ "fixed-hash 0.8.0",
+ "impl-rlp",
+ "impl-serde 0.4.0",
+ "primitive-types 0.12.0",
  "uint",
 ]
 
@@ -1356,7 +1383,7 @@ dependencies = [
  "evm-runtime",
  "log",
  "parity-scale-codec",
- "primitive-types",
+ "primitive-types 0.11.1",
  "rlp",
  "scale-info",
  "serde",
@@ -1369,7 +1396,7 @@ version = "0.35.0"
 source = "git+https://github.com/rust-blockchain/evm?rev=51b8c2ce3104265e1fd5bb0fe5cdfd2e0938239c#51b8c2ce3104265e1fd5bb0fe5cdfd2e0938239c"
 dependencies = [
  "parity-scale-codec",
- "primitive-types",
+ "primitive-types 0.11.1",
  "scale-info",
  "serde",
 ]
@@ -1382,7 +1409,7 @@ dependencies = [
  "environmental",
  "evm-core",
  "evm-runtime",
- "primitive-types",
+ "primitive-types 0.11.1",
 ]
 
 [[package]]
@@ -1393,7 +1420,7 @@ dependencies = [
  "auto_impl",
  "environmental",
  "evm-core",
- "primitive-types",
+ "primitive-types 0.11.1",
  "sha3",
 ]
 
@@ -1483,7 +1510,7 @@ version = "2.0.0-dev"
 dependencies = [
  "beefy-primitives",
  "ethereum",
- "ethereum-types",
+ "ethereum-types 0.14.0",
  "evm",
  "fc-db",
  "fc-rpc-core",
@@ -1530,7 +1557,7 @@ name = "fc-rpc-core"
 version = "1.1.0-dev"
 dependencies = [
  "ethereum",
- "ethereum-types",
+ "ethereum-types 0.14.0",
  "jsonrpsee",
  "rlp",
  "rustc-hex",
@@ -1581,6 +1608,18 @@ name = "fixed-hash"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfcf0ed7fe52a17a03854ec54a9f76d6d84508d1c0e66bc1793301c73fc8493c"
+dependencies = [
+ "byteorder",
+ "rand 0.8.5",
+ "rustc-hex",
+ "static_assertions",
+]
+
+[[package]]
+name = "fixed-hash"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "835c052cb0c08c1acf6ffd71c022172e18723949c8282f2b9f27efbc51e64534"
 dependencies = [
  "byteorder",
  "rand 0.8.5",
@@ -1653,7 +1692,7 @@ name = "fp-ethereum"
 version = "1.0.0-dev"
 dependencies = [
  "ethereum",
- "ethereum-types",
+ "ethereum-types 0.13.1",
  "fp-evm",
  "frame-support",
  "num_enum",
@@ -1679,7 +1718,7 @@ name = "fp-rpc"
 version = "3.0.0-dev"
 dependencies = [
  "ethereum",
- "ethereum-types",
+ "ethereum-types 0.14.0",
  "fp-evm",
  "parity-scale-codec",
  "scale-info",
@@ -2456,6 +2495,15 @@ name = "impl-serde"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4551f042f3438e64dbd6226b20527fc84a6e1fe65688b58746a2f53623f25f5c"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "impl-serde"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebc88fc67028ae3db0c853baa36269d398d5f45b6982f95549ff5def78c935cd"
 dependencies = [
  "serde",
 ]
@@ -4054,7 +4102,7 @@ name = "pallet-ethereum"
 version = "4.0.0-dev"
 dependencies = [
  "ethereum",
- "ethereum-types",
+ "ethereum-types 0.14.0",
  "evm",
  "fp-consensus",
  "fp-ethereum",
@@ -4094,7 +4142,7 @@ dependencies = [
  "pallet-balances",
  "pallet-timestamp",
  "parity-scale-codec",
- "primitive-types",
+ "primitive-types 0.11.1",
  "rlp",
  "scale-info",
  "serde",
@@ -4401,13 +4449,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c32561d248d352148124f036cac253a644685a21dc9fea383eb4907d7bd35a8f"
 dependencies = [
  "cfg-if",
- "ethereum-types",
+ "ethereum-types 0.13.1",
  "hashbrown",
  "impl-trait-for-tuples",
  "lru 0.7.8",
  "parity-util-mem-derive",
  "parking_lot 0.12.1",
- "primitive-types",
+ "primitive-types 0.11.1",
  "smallvec",
  "winapi",
 ]
@@ -4642,11 +4690,24 @@ version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e28720988bff275df1f51b171e1b2a18c30d194c4d2b61defdacecd625a5d94a"
 dependencies = [
- "fixed-hash",
+ "fixed-hash 0.7.0",
  "impl-codec",
  "impl-rlp",
- "impl-serde",
+ "impl-serde 0.3.2",
  "scale-info",
+ "uint",
+]
+
+[[package]]
+name = "primitive-types"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cfd65aea0c5fa0bfcc7c9e7ca828c921ef778f43d325325ec84bda371bfa75a"
+dependencies = [
+ "fixed-hash 0.8.0",
+ "impl-codec",
+ "impl-rlp",
+ "impl-serde 0.4.0",
  "uint",
 ]
 
@@ -6529,7 +6590,7 @@ dependencies = [
  "futures",
  "hash-db",
  "hash256-std-hasher",
- "impl-serde",
+ "impl-serde 0.3.2",
  "lazy_static",
  "libsecp256k1",
  "log",
@@ -6538,7 +6599,7 @@ dependencies = [
  "parity-scale-codec",
  "parity-util-mem",
  "parking_lot 0.12.1",
- "primitive-types",
+ "primitive-types 0.11.1",
  "rand 0.7.3",
  "regex",
  "scale-info",
@@ -6771,7 +6832,7 @@ dependencies = [
  "bytes",
  "impl-trait-for-tuples",
  "parity-scale-codec",
- "primitive-types",
+ "primitive-types 0.11.1",
  "sp-externalities",
  "sp-runtime-interface-proc-macro",
  "sp-std",
@@ -6864,7 +6925,7 @@ name = "sp-storage"
 version = "6.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.30#a3ed0119c45cdd0d571ad34e5b3ee7518c8cef8d"
 dependencies = [
- "impl-serde",
+ "impl-serde 0.3.2",
  "parity-scale-codec",
  "ref-cast",
  "serde",
@@ -6966,7 +7027,7 @@ name = "sp-version"
 version = "5.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.30#a3ed0119c45cdd0d571ad34e5b3ee7518c8cef8d"
 dependencies = [
- "impl-serde",
+ "impl-serde 0.3.2",
  "parity-scale-codec",
  "parity-wasm 0.45.0",
  "scale-info",
