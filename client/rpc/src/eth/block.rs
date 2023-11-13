@@ -27,7 +27,7 @@ use sc_transaction_pool_api::InPoolTransaction;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::hashing::keccak_256;
-use sp_runtime::traits::Block as BlockT;
+use sp_runtime::traits::{Zero, Block as BlockT};
 // Frontier
 use fc_rpc_core::types::*;
 use fp_rpc::EthereumRuntimeRPCApi;
@@ -157,7 +157,15 @@ where
 					}
 					_ => {
 						log::info!(">>>> Matched in _");
-						if let BlockNumber::Num(block_number) = number {
+						let maybe_block_number = if let BlockNumber::Num(block_number) = number {
+							Some(block_number)
+						} else if let BlockNumber::Earliest = number {
+							Some(Zero::zero())
+						} else  {
+							None
+						};
+
+						if let Some(block_number) = maybe_block_number {
 							log::info!(">>>> Inner block number: {:?}", block_number);
 							let eth_block = empty_block_from(block_number.into());
 							let eth_hash = H256::from_slice(
@@ -172,7 +180,7 @@ where
 								false,
 							)))
 						} else {
-							log::info!(">>>> Returning None but this should not happen");
+							log::info!(">>>> Returning None but this should not");
 							Ok(None)
 						}
 					}
