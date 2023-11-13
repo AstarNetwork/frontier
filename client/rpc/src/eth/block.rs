@@ -116,7 +116,6 @@ where
 		.await?
 		{
 			Some(id) => {
-				log::info!(">>>> Block number: {:?} id: {:?}", number, id);
 				let substrate_hash = client
 					.expect_block_hash_from_id(&id)
 					.map_err(|_| internal_err(format!("Expect block number from id: {}", id)))?;
@@ -130,10 +129,8 @@ where
 
 				let base_fee = client.runtime_api().gas_price(substrate_hash).ok();
 
-				log::info!(">>>> Block/statuses: {:?}/{:?}", block, statuses);
 				match (block, statuses) {
 					(Some(block), Some(statuses)) => {
-						log::info!(">>>> Matched in Some/Some");
 						let hash = H256::from(keccak_256(&rlp::encode(&block.header)));
 						let mut rich_block = rich_block_build(
 							block,
@@ -156,7 +153,7 @@ where
 						Ok(Some(rich_block))
 					}
 					_ => {
-						log::info!(">>>> Matched in _");
+						// Fallback solution for an issue with Shiden where early blocks are missing.
 						let maybe_block_number = if let BlockNumber::Num(block_number) = number {
 							Some(block_number)
 						} else if let BlockNumber::Earliest = number {
@@ -166,7 +163,6 @@ where
 						};
 
 						if let Some(block_number) = maybe_block_number {
-							log::info!(">>>> Inner block number: {:?}", block_number);
 							let eth_block = empty_block_from(block_number.into());
 							let eth_hash = H256::from_slice(
 								keccak_256(&rlp::encode(&eth_block.header)).as_slice(),
@@ -180,7 +176,6 @@ where
 								false,
 							)))
 						} else {
-							log::info!(">>>> Returning None but this should not");
 							Ok(None)
 						}
 					}
