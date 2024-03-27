@@ -1088,13 +1088,10 @@ impl<R: pallet_evm::Config, P: PrecompileSetFragment> PrecompileSetBuilder<R, P>
 	}
 
 	/// Return the list of addresses contained in this PrecompileSet.
-	pub fn used_addresses() -> impl Iterator<Item = R::AccountId> {
-		Self::new()
-			.inner
-			.used_addresses()
-			.into_iter()
-			.map(R::AddressMapping::into_account_id)
-	}
+    /// Return the list of addresses contained in this PrecompileSet.
+    pub fn used_addresses() -> impl Iterator<Item = H160> {
+        Self::new().inner.used_addresses().into_iter()
+    }
 
 	pub fn summarize_checks(&self) -> Vec<PrecompileCheckSummary> {
 		self.inner.summarize_checks()
