@@ -18,7 +18,7 @@ describeWithFrontier("Frontier RPC (Contract)", (context) => {
 				from: GENESIS_ACCOUNT,
 				data: TEST_CONTRACT_BYTECODE,
 				value: "0x00",
-				gasPrice: "0x3B9ACA00",
+				gasPrice: await context.web3.eth.getGasPrice(),
 				gas: "0x100000",
 			},
 			GENESIS_ACCOUNT_PRIVATE_KEY
@@ -52,7 +52,7 @@ describeWithFrontier("Frontier RPC (Contract)", (context) => {
 					)
 					.encodeABI(),
 				value: "0x00",
-				gasPrice: "0x3B9ACA00",
+				gasPrice: await context.web3.eth.getGasPrice(),
 				gas: "0x500000",
 			},
 			GENESIS_ACCOUNT_PRIVATE_KEY
@@ -89,7 +89,7 @@ describeWithFrontier("Frontier RPC (Contract)", (context) => {
 		await context.web3.eth.accounts.wallet.add(GENESIS_ACCOUNT_PRIVATE_KEY);
 		const contract = new context.web3.eth.Contract(TEST_CONTRACT_ABI, FIRST_CONTRACT_ADDRESS, {
 			from: GENESIS_ACCOUNT,
-			gasPrice: "0x3B9ACA00",
+			gasPrice: await context.web3.eth.getGasPrice(),
 		});
 
 		const promisify = (inner) => new Promise((resolve, reject) => inner(resolve, reject));

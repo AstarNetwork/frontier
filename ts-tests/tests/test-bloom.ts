@@ -14,7 +14,7 @@ describeWithFrontier("Frontier RPC (Bloom)", (context) => {
 				from: GENESIS_ACCOUNT,
 				data: TEST_CONTRACT_BYTECODE,
 				value: "0x00",
-				gasPrice: "0x3B9ACA00",
+				gasPrice: await context.web3.eth.getGasPrice(),
 				gas: "0x100000",
 			},
 			GENESIS_ACCOUNT_PRIVATE_KEY

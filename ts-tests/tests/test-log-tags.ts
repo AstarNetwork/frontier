@@ -17,7 +17,7 @@ describeWithFrontier("Frontier RPC (Log BlockNumber tags)", (context) => {
 				from: GENESIS_ACCOUNT,
 				data: TEST_CONTRACT_BYTECODE,
 				value: "0x00",
-				gasPrice: "0x3B9ACA00",
+				gasPrice: await context.web3.eth.getGasPrice(),
 				gas: "0x100000",
 			},
 			GENESIS_ACCOUNT_PRIVATE_KEY
@@ -28,6 +28,7 @@ describeWithFrontier("Frontier RPC (Log BlockNumber tags)", (context) => {
 	}
 
 	before("Send some transactions across blocks", async function () {
+		this.timeout(10_000);
 		for (var i = 0; i < EXPECTED_LOGS; i++) {
 			await sendTransaction(context);
 			await createAndFinalizeBlock(context.web3);

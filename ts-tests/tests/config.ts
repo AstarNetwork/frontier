@@ -1,20 +1,18 @@
-export const GENESIS_ACCOUNT = "0x6be02d1d3665660d22ff9624b7be0551ee1ac91b";
-export const GENESIS_ACCOUNT_PRIVATE_KEY = "0x99B3C12287537E38C90A9219D4CB074A89A16E9CDB20BF85728EBD97C343E342";
-export const GENESIS_ACCOUNT_BALANCE = "340282366920938463463374607431768211455";
+export const GENESIS_ACCOUNT = "0xaaafB3972B05630fCceE866eC69CdADd9baC2771";
+export const GENESIS_ACCOUNT_PRIVATE_KEY = "0x01ab6e801c06e59ca97a14fc0a1978b27fa366fc87450e0b65459dd3515b7391";
+export const GENESIS_ACCOUNT_BALANCE = "999999999999999999999999500";
 
-export const FIRST_CONTRACT_ADDRESS = "0xc2bf5f29a4384b1ab0c063e1c666f02121b6084a";
+export const FIRST_CONTRACT_ADDRESS = "0x687528e4BC4040DC9ADBA05C1f00aE3633faa731";
 
-export const NODE_BINARY_NAME = "frontier-template-node";
-
-export const RUNTIME_SPEC_NAME = "frontier-template";
+export const RUNTIME_SPEC_NAME = "local";
 export const RUNTIME_SPEC_VERSION = 1;
 export const RUNTIME_IMPL_VERSION = 1;
 
-export const CHAIN_ID = 42;
+export const CHAIN_ID = 4369;
 export const BLOCK_TIMESTAMP = 6; // 6 seconds per block
 export const BLOCK_HASH_COUNT = 256;
-export const EXISTENTIAL_DEPOSIT = 0; // The minimum amount required to keep an account open
-export const ETH_BLOCK_GAS_LIMIT = 75000000; // The same configuration as runtime
+export const EXISTENTIAL_DEPOSIT = 500; // The minimum amount required to keep an account open
+export const ETH_BLOCK_GAS_LIMIT = 30000000; // The same configuration as runtime
 export const ETH_BLOCK_POV_LIMIT = 5 * 1024 * 1024; // The same configuration as runtime
 
 // ERC20 used to test pov size transfer tests, not meant to be interacted with

@@ -15,7 +15,7 @@ describeWithFrontier("Frontier RPC (Pending Pool)", (context) => {
 				from: GENESIS_ACCOUNT,
 				data: TEST_CONTRACT_BYTECODE,
 				value: "0x00",
-				gasPrice: "0x3B9ACA00",
+				gasPrice: await context.web3.eth.getGasPrice(),
 				gas: "0x100000",
 			},
 			GENESIS_ACCOUNT_PRIVATE_KEY
@@ -28,9 +28,9 @@ describeWithFrontier("Frontier RPC (Pending Pool)", (context) => {
 		expect(pendingTransaction).to.include({
 			blockNumber: null,
 			hash: txHash,
-			r: "0x8e3759de96b00f8a05a95c24fa905963f86a82a0038cca0fde035762fb2d24f7",
-			s: "0x7131a2c265463f4bb063504f924df4d3d14bdad9cdfff8391041ea78295d186b",
-			v: "0x77",
+			r: "0x632aad667167aa9e6c58e9689699669d0cd130cfb4ddb42a61fb223c1ed9a9f0",
+			s: "0x48736055c6a8059e95c1e5a499cdd809b985416beca532409a2fd7edc7a5401a",
+			v: "0x2245",
 		});
 
 		await createAndFinalizeBlock(context.web3);
@@ -38,9 +38,9 @@ describeWithFrontier("Frontier RPC (Pending Pool)", (context) => {
 		const processedTransaction = (await customRequest(context.web3, "eth_getTransactionByHash", [txHash])).result;
 		expect(processedTransaction).to.include({
 			hash: txHash,
-			r: "0x8e3759de96b00f8a05a95c24fa905963f86a82a0038cca0fde035762fb2d24f7",
-			s: "0x7131a2c265463f4bb063504f924df4d3d14bdad9cdfff8391041ea78295d186b",
-			v: "0x77",
+			r: "0x632aad667167aa9e6c58e9689699669d0cd130cfb4ddb42a61fb223c1ed9a9f0",
+			s: "0x48736055c6a8059e95c1e5a499cdd809b985416beca532409a2fd7edc7a5401a",
+			v: "0x2245",
 		});
 	});
 });
@@ -61,7 +61,7 @@ describeWithFrontier("Frontier RPC (Pending Transaction Count)", (context) => {
 					from: GENESIS_ACCOUNT,
 					to: TEST_ACCOUNT,
 					value: "0x200", // Must be higher than ExistentialDeposit
-					gasPrice: "0x3B9ACA00",
+					gasPrice: await context.web3.eth.getGasPrice(),
 					gas: "0x100000",
 					nonce: nonce,
 				},

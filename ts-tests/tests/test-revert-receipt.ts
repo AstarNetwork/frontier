@@ -26,7 +26,7 @@ describeWithFrontier("Frontier RPC (Constructor Revert)", (context) => {
 				from: GENESIS_ACCOUNT,
 				data: GOOD_BYTECODE,
 				value: "0x00",
-				gasPrice: "0x3B9ACA00",
+				gasPrice: await context.web3.eth.getGasPrice(),
 				gas: "0x100000",
 			},
 			GENESIS_ACCOUNT_PRIVATE_KEY
@@ -38,7 +38,7 @@ describeWithFrontier("Frontier RPC (Constructor Revert)", (context) => {
 		await createAndFinalizeBlock(context.web3);
 		const receipt = await context.web3.eth.getTransactionReceipt(txHash);
 		expect(receipt).to.include({
-			from: GENESIS_ACCOUNT,
+			from: GENESIS_ACCOUNT.toLocaleLowerCase(),
 			to: null,
 			transactionHash: txHash,
 			transactionIndex: 0,
@@ -55,7 +55,7 @@ describeWithFrontier("Frontier RPC (Constructor Revert)", (context) => {
 				from: GENESIS_ACCOUNT,
 				data: FAIL_BYTECODE,
 				value: "0x00",
-				gasPrice: "0x3B9ACA00",
+				gasPrice: await context.web3.eth.getGasPrice(),
 				gas: "0x100000",
 			},
 			GENESIS_ACCOUNT_PRIVATE_KEY
@@ -67,7 +67,7 @@ describeWithFrontier("Frontier RPC (Constructor Revert)", (context) => {
 		await createAndFinalizeBlock(context.web3);
 		const receipt = await context.web3.eth.getTransactionReceipt(txHash);
 		expect(receipt).to.include({
-			from: GENESIS_ACCOUNT,
+			from: GENESIS_ACCOUNT.toLocaleLowerCase(),
 			to: null,
 			transactionHash: txHash,
 			transactionIndex: 0,

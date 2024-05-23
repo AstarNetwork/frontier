@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { step } from "mocha-steps";
 
-import { GENESIS_ACCOUNT, GENESIS_ACCOUNT_PRIVATE_KEY } from "./config";
+import { FIRST_CONTRACT_ADDRESS, GENESIS_ACCOUNT, GENESIS_ACCOUNT_PRIVATE_KEY } from "./config";
 import { createAndFinalizeBlock, customRequest, describeWithFrontierWs } from "./util";
 
 describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
@@ -17,7 +17,7 @@ describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
 				from: GENESIS_ACCOUNT,
 				data: TEST_CONTRACT_BYTECODE,
 				value: "0x00",
-				gasPrice: "0x3B9ACA00",
+				gasPrice: await context.web3.eth.getGasPrice(),
 				gas: "0x1000000",
 			},
 			GENESIS_ACCOUNT_PRIVATE_KEY
@@ -70,12 +70,12 @@ describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
 		await dataPromise;
 
 		expect(data).to.include({
-			author: "0x0000000000000000000000000000000000000000",
+			author: "0x15fdd31c61141abd04a99fd6822c8558854ccde3",
 			difficulty: "0",
 			extraData: "0x",
 			logsBloom:
 				"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-			miner: "0x0000000000000000000000000000000000000000",
+			miner: "0x15fdd31C61141abd04A99FD6822c8558854ccDe3",
 			number: 2,
 			receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 			sha3Uncles: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
@@ -157,9 +157,9 @@ describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
 			{
 				address: [
 					"0xF8cef78E923919054037a1D03662bBD884fF4edf",
-					"0x42e2EE7Ba8975c473157634Ac2AF4098190fc741",
+					"0xfB13f1A798a1aa6D8359fE4bEAAeF1FD04a8dCD4",
 					"0x5c4242beB94dE30b922f57241f1D02f36e906915",
-					"0xC2Bf5F29a4384b1aB0C063e1c666f02121B6084a",
+					"0x687528e4BC4040DC9ADBA05C1f00aE3633faa731",
 				],
 			},
 			function (error, result) {}
@@ -255,7 +255,7 @@ describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
 			"logs",
 			{
 				fromBlock: "0x0",
-				address: "0x42e2EE7Ba8975c473157634Ac2AF4098190fc741",
+				address: "0xfB13f1A798a1aa6D8359fE4bEAAeF1FD04a8dCD4",
 			},
 			function (error, result) {}
 		);
@@ -279,7 +279,7 @@ describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
 			{
 				fromBlock: "0x0",
 				topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"],
-				address: "0xC2Bf5F29a4384b1aB0C063e1c666f02121B6084a",
+				address: "0xfB13f1A798a1aa6D8359fE4bEAAeF1FD04a8dCD4",
 			},
 			function (error, result) {}
 		);
@@ -306,9 +306,9 @@ describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
 				address: [
 					"0xe573BCA813c741229ffB2488F7856C6cAa841041",
 					"0xF8cef78E923919054037a1D03662bBD884fF4edf",
-					"0x42e2EE7Ba8975c473157634Ac2AF4098190fc741",
+					"0xfB13f1A798a1aa6D8359fE4bEAAeF1FD04a8dCD4",
 					"0x5c4242beB94dE30b922f57241f1D02f36e906915",
-					"0xC2Bf5F29a4384b1aB0C063e1c666f02121B6084a",
+					"0x687528e4BC4040DC9ADBA05C1f00aE3633faa731",
 				],
 			},
 			function (error, result) {}
@@ -452,10 +452,10 @@ describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
 					"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
 					[
 						"0x0000000000000000000000000000000000000000000000000000000000000000",
-						"0x0000000000000000000000006be02d1d3665660d22ff9624b7be0551ee1ac91b",
+						"0x000000000000000000000000aaafb3972b05630fccee866ec69cdadd9bac2771",
 					],
 					[
-						"0x0000000000000000000000006be02d1d3665660d22ff9624b7be0551ee1ac91b",
+						"0x000000000000000000000000aaafb3972b05630fccee866ec69cdadd9bac2771",
 						"0x0000000000000000000000000000000000000000000000000000000000000000",
 					],
 				],
@@ -524,6 +524,7 @@ describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
 		});
 
 		await createAndFinalizeBlock(context.web3);
+
 		await dataPromise;
 
 		subscription.unsubscribe();

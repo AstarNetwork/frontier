@@ -45,7 +45,7 @@ describeWithFrontier("Frontier RPC (StateOverride)", (context) => {
 				to: contractAddress,
 				data: contract.methods.setAllowance(otherAddress, 10).encodeABI(),
 				gas: "0x100000",
-				gasPrice: "0x3B9ACA00",
+				gasPrice: await context.web3.eth.getGasPrice(),
 				value: "0x0",
 			},
 			GENESIS_ACCOUNT_PRIVATE_KEY
@@ -62,9 +62,7 @@ describeWithFrontier("Frontier RPC (StateOverride)", (context) => {
 				data: contract.methods.getSenderBalance().encodeABI(),
 			},
 		]);
-		const balance = Web3.utils.toBN(
-			Web3.utils.fromWei(Web3.utils.hexToNumberString(result), "tether").split(".")[0]
-		);
+		const balance = Web3.utils.toBN(Web3.utils.fromWei(Web3.utils.hexToNumberString(result)).split(".")[0]);
 		expect(balance.gten(1000), "balance was not above 1000 tether").to.be.true;
 	});
 
@@ -82,7 +80,7 @@ describeWithFrontier("Frontier RPC (StateOverride)", (context) => {
 				},
 			},
 		]);
-		expect(Web3.utils.hexToNumberString(result)).to.equal("5000");
+		expect(Web3.utils.hexToNumberString(result)).to.equal("4500"); // 500 is ED
 	});
 
 	it("should have availableFunds of 100 without state override", async function () {

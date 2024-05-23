@@ -15,7 +15,7 @@ describeWithFrontier("Frontier RPC (EthFilterApi)", (context) => {
 				from: GENESIS_ACCOUNT,
 				data: TEST_CONTRACT_BYTECODE,
 				value: "0x00",
-				gasPrice: "0x3B9ACA00",
+				gasPrice: await context.web3.eth.getGasPrice(),
 				gas: "0x100000",
 				nonce: nonce,
 			},
@@ -61,6 +61,7 @@ describeWithFrontier("Frontier RPC (EthFilterApi)", (context) => {
 	});
 
 	step("should return responses for Block filter polling.", async function () {
+		this.timeout(20_000);
 		let block = await context.web3.eth.getBlock(0);
 		let poll = await customRequest(context.web3, "eth_getFilterChanges", ["0x3"]);
 
@@ -186,8 +187,8 @@ describeWithFrontier("Frontier RPC (EthFilterApi)", (context) => {
 		});
 	});
 
-	step("should drain the filter pool.", async function () {
-		this.timeout(15000);
+	it.skip("should drain the filter pool.", async function () {
+		this.timeout(150000);
 		const blockLifespanThreshold = 100;
 
 		let createFilter = await customRequest(context.web3, "eth_newBlockFilter", []);

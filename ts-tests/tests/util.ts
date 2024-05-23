@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 import { JsonRpcResponse } from "web3-core-helpers";
 import { spawn, ChildProcess } from "child_process";
 
-import { NODE_BINARY_NAME, CHAIN_ID } from "./config";
+import { CHAIN_ID } from "./config";
 
 export const PORT = 19931;
 export const RPC_PORT = 19932;
@@ -13,7 +13,7 @@ export const FRONTIER_LOG = process.env.FRONTIER_LOG || "info";
 export const FRONTIER_BUILD = process.env.FRONTIER_BUILD || "release";
 export const FRONTIER_BACKEND_TYPE = process.env.FRONTIER_BACKEND_TYPE || "key-value";
 
-export const BINARY_PATH = `../target/${FRONTIER_BUILD}/${NODE_BINARY_NAME}`;
+export const BINARY_PATH = process.env.BINARY_PATH;
 export const SPAWNING_TIME = 60000;
 
 export async function customRequest(web3: Web3, method: string, params: any[]) {
@@ -46,7 +46,7 @@ export async function createAndFinalizeBlock(web3: Web3, finalize: boolean = tru
 	if (!response.result) {
 		throw new Error(`Unexpected result: ${JSON.stringify(response)}`);
 	}
-	await new Promise<void>((resolve) => setTimeout(() => resolve(), 500));
+	await new Promise<void>((resolve) => setTimeout(() => resolve(), 2000));
 }
 
 // Create a block and finalize it.
@@ -70,20 +70,21 @@ export async function startFrontierNode(provider?: string): Promise<{
 
 	const cmd = BINARY_PATH;
 	const args = [
-		`--chain=dev`,
+		`--dev`,
 		`--validator`, // Required by manual sealing to author the blocks
 		`--execution=Native`, // Faster execution using native
 		`--no-telemetry`,
 		`--no-prometheus`,
-		`--sealing=Manual`,
+		// `--sealing=Manual`,
 		`--no-grandpa`,
 		`--force-authoring`,
 		`-l${FRONTIER_LOG}`,
 		`--port=${PORT}`,
 		`--rpc-port=${RPC_PORT}`,
-		`--frontier-backend-type=${FRONTIER_BACKEND_TYPE}`,
+		`--enable-evm-rpc`,
+		// `--frontier-backend-type=${FRONTIER_BACKEND_TYPE}`,
 		`--tmp`,
-		`--unsafe-force-node-key-generation`,
+		// `--unsafe-force-node-key-generation`,
 	];
 	const binary = spawn(cmd, args);
 
@@ -113,7 +114,7 @@ export async function startFrontierNode(provider?: string): Promise<{
 				console.log(chunk.toString());
 			}
 			binaryLogs.push(chunk);
-			if (chunk.toString().match(/Manual Seal Ready/)) {
+			if (chunk.toString().match(/best: #0/)) {
 				if (!provider || provider == "http") {
 					// This is needed as the EVM runtime needs to warmup with a first call
 					await web3.eth.getChainId();

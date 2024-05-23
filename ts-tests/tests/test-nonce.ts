@@ -8,13 +8,12 @@ describeWithFrontier("Frontier RPC (Nonce)", (context) => {
 	const TEST_ACCOUNT = "0x1111111111111111111111111111111111111111";
 
 	step("get nonce", async function () {
-		this.timeout(10_000);
 		const tx = await context.web3.eth.accounts.signTransaction(
 			{
 				from: GENESIS_ACCOUNT,
 				to: TEST_ACCOUNT,
 				value: "0x200", // Must be higher than ExistentialDeposit
-				gasPrice: "0x3B9ACA00",
+				gasPrice: await context.web3.eth.getGasPrice(),
 				gas: "0x100000",
 			},
 			GENESIS_ACCOUNT_PRIVATE_KEY
@@ -43,7 +42,7 @@ describeWithFrontier("Frontier RPC (Nonce)", (context) => {
 				from: GENESIS_ACCOUNT,
 				to: TEST_ACCOUNT,
 				value: "0x400", // Must be higher than ExistentialDeposit
-				gasPrice: "0x3B9ACA00",
+				gasPrice: await context.web3.eth.getGasPrice(),
 				gas: "0x100000",
 				nonce: 0,
 			},

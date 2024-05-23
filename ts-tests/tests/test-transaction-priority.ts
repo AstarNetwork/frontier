@@ -27,23 +27,14 @@ describeWithFrontier("Frontier RPC (Priority)", (context) => {
 
 	step("should prioritize transaction with the higher gasPrice", async function () {
 		this.timeout(15000);
-		const gasPrices = [
-			"0x3B9ACA01",
-			"0x3B9ACA00",
-			"0x3B9ACA04",
-			"0x3B9ACA06",
-			"0x3B9ACA01",
-			"0x3B9ACA07",
-			"0x3B9ACA02",
-			"0x3B9ACA05",
-			"0x3B9ACA03",
-		];
+		const gasPrices = [1, 0, 4, 6, 1, 7, 2, 5, 3];
+		const baseGasPrice = Number(await context.web3.eth.getGasPrice());
 		for (var gasPrice of gasPrices) {
-			await sendTransaction(context, gasPrice);
+			await sendTransaction(context, baseGasPrice + gasPrice);
 		}
 		await createAndFinalizeBlock(context.web3);
 		const block = await context.web3.eth.getBlock("latest", true);
 		expect(block.transactions.length).to.be.eq(1);
-		expect(block.transactions[0].gasPrice).to.be.eq("1000000007");
+		expect(block.transactions[0].gasPrice).to.be.eq(`${baseGasPrice + 7}`);
 	});
 });
