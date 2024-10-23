@@ -33,7 +33,7 @@ use fc_rpc_core::types::*;
 use fp_rpc::EthereumRuntimeRPCApi;
 
 use crate::{
-	eth::{empty_block_from, rich_block_build, BlockInfo, Eth, EthConfig},
+	eth::{empty_block_from, rich_block_build, BlockInfo, Eth},
 	frontier_backend_client, internal_err,
 };
 
