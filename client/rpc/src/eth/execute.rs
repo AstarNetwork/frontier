@@ -48,7 +48,7 @@ use crate::{
 };
 
 /// Default JSONRPC error code return by geth
-pub const JSON_RPC_ERROR_DEFAULT: i32 = -32000;
+// pub const JSON_RPC_ERROR_DEFAULT: i32 = -32000;
 
 /// The types contained in this module are required for backwards compatility when decoding
 /// results produced by old versions of substrate.
