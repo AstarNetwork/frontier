@@ -2895,7 +2895,7 @@ dependencies = [
 [[package]]
 name = "evm"
 version = "0.43.4"
-source = "git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
+source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
 dependencies = [
  "auto_impl",
  "environmental",
@@ -2915,7 +2915,7 @@ dependencies = [
 [[package]]
 name = "evm-core"
 version = "0.43.0"
-source = "git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
+source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
 dependencies = [
  "parity-scale-codec",
  "primitive-types",
@@ -2926,7 +2926,7 @@ dependencies = [
 [[package]]
 name = "evm-gasometer"
 version = "0.43.0"
-source = "git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
+source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
 dependencies = [
  "environmental",
  "evm-core",
@@ -2937,7 +2937,7 @@ dependencies = [
 [[package]]
 name = "evm-runtime"
 version = "0.43.0"
-source = "git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
+source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
 dependencies = [
  "auto_impl",
  "environmental",
