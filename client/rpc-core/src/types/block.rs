@@ -101,6 +101,9 @@ pub struct Header {
 	pub difficulty: U256,
 	/// Nonce
 	pub nonce: Option<H64>,
+	/// Mix hash
+	#[serde(rename = "mixHash", default, skip_serializing_if = "Option::is_none")]
+	pub mix_hash: Option<H256>,
 	/// Size in bytes
 	pub size: Option<U256>,
 }

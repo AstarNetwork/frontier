@@ -104,6 +104,7 @@ impl PubSubResult {
 				timestamp: U256::from(block.header.timestamp),
 				difficulty: block.header.difficulty,
 				nonce: Some(block.header.nonce),
+				mix_hash: Some(block.header.mix_hash),
 				size: Some(U256::from(rlp::encode(&block.header).len() as u32)),
 			},
 			extra_info: BTreeMap::new(),
