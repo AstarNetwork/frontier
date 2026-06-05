@@ -35,7 +35,11 @@ use fc_storage::StorageOverride;
 use fp_consensus::{FindLogError, Hashes, Log, PostLog, PreLog};
 use fp_rpc::EthereumRuntimeRPCApi;
 
-use crate::{EthereumBlockNotification, EthereumBlockNotificationSinks, SyncStrategy};
+use crate::{
+	emit_block_notification, BlockNotificationContext, EthereumBlockNotification,
+	EthereumBlockNotificationSinks, SyncStrategy,
+};
+use worker::BestBlockInfo;
 
 pub fn sync_block<Block: BlockT, C: HeaderBackend<Block>>(
 	storage_override: Arc<dyn StorageOverride<Block>>,
@@ -155,7 +159,7 @@ pub fn sync_one_block<Block: BlockT, C, BE>(
 	pubsub_notification_sinks: Arc<
 		EthereumBlockNotificationSinks<EthereumBlockNotification<Block>>,
 	>,
-	best_at_import: &mut HashMap<Block::Hash, <Block::Header as HeaderT>::Number>,
+	best_at_import: &mut HashMap<Block::Hash, BestBlockInfo<Block>>,
 ) -> Result<bool, String>
 where
 	C: ProvideRuntimeApi<Block>,
@@ -223,25 +227,26 @@ where
 			.meta()
 			.write_current_syncing_tips(current_syncing_tips)?;
 	}
-	// Notify on import and remove closed channels.
-	// Only notify when the node is not in major syncing.
-	let sinks = &mut pubsub_notification_sinks.lock();
-	sinks.retain(|sink| {
-		if !sync_oracle.is_major_syncing() {
-			let hash = operating_header.hash();
-			// Use the `is_new_best` status from import time if available.
-			// This avoids race conditions where the best hash may have changed
-			// between import and sync time (e.g., during rapid reorgs).
-			// Fall back to current best hash check for blocks synced during catch-up.
-			let is_new_best =
-				best_at_import.remove(&hash).is_some() || client.info().best_hash == hash;
-			sink.unbounded_send(EthereumBlockNotification { is_new_best, hash })
-				.is_ok()
-		} else {
-			// Remove from the pool if in major syncing.
-			false
-		}
-	});
+	// Notify on import and remove closed channels using the unified notification mechanism.
+	let hash = operating_header.hash();
+	// Use the `is_new_best` status from import time if available.
+	// This avoids race conditions where the best hash may have changed
+	// between import and sync time (e.g., during rapid reorgs).
+	// Fall back to current best hash check for blocks synced during catch-up.
+	let best_info = best_at_import.remove(&hash);
+	let is_new_best = best_info.is_some() || client.info().best_hash == hash;
+	let reorg_info = best_info.and_then(|info| info.reorg_info);
+
+	emit_block_notification(
+		pubsub_notification_sinks.as_ref(),
+		sync_oracle.as_ref(),
+		BlockNotificationContext {
+			hash,
+			is_new_best,
+			reorg_info,
+		},
+	);
+
 	Ok(true)
 }
 
@@ -257,7 +262,7 @@ pub fn sync_blocks<Block: BlockT, C, BE>(
 	pubsub_notification_sinks: Arc<
 		EthereumBlockNotificationSinks<EthereumBlockNotification<Block>>,
 	>,
-	best_at_import: &mut HashMap<Block::Hash, <Block::Header as HeaderT>::Number>,
+	best_at_import: &mut HashMap<Block::Hash, BestBlockInfo<Block>>,
 ) -> Result<bool, String>
 where
 	C: ProvideRuntimeApi<Block>,
@@ -286,7 +291,7 @@ where
 	// Entries for finalized blocks are no longer needed since finalized blocks
 	// cannot be reorged and their is_new_best status is irrelevant.
 	let finalized_number = client.info().finalized_number;
-	best_at_import.retain(|_, block_number| *block_number > finalized_number);
+	best_at_import.retain(|_, info| info.block_number > finalized_number);
 
 	Ok(synced_any)
 }

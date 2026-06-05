@@ -45,7 +45,7 @@ use crate::{cache::EthBlockDataCacheTask, frontier_backend_client, internal_err}
 pub struct EthFilter<B: BlockT, C, BE, P> {
 	client: Arc<C>,
 	backend: Arc<dyn fc_api::Backend<B>>,
-	graph: Arc<P>,
+	pool: Arc<P>,
 	filter_pool: FilterPool,
 	max_stored_filters: usize,
 	max_past_logs: u32,
@@ -58,7 +58,7 @@ impl<B: BlockT, C, BE, P: TransactionPool> EthFilter<B, C, BE, P> {
 	pub fn new(
 		client: Arc<C>,
 		backend: Arc<dyn fc_api::Backend<B>>,
-		graph: Arc<P>,
+		pool: Arc<P>,
 		filter_pool: FilterPool,
 		max_stored_filters: usize,
 		max_past_logs: u32,
@@ -68,7 +68,7 @@ impl<B: BlockT, C, BE, P: TransactionPool> EthFilter<B, C, BE, P> {
 		Self {
 			client,
 			backend,
-			graph,
+			pool,
 			filter_pool,
 			max_stored_filters,
 			max_past_logs,
@@ -110,7 +110,7 @@ where
 
 			let pending_transaction_hashes = if let FilterType::PendingTransaction = filter_type {
 				let txs_ready = self
-					.graph
+					.pool
 					.ready()
 					.map(|in_pool_tx| in_pool_tx.data().as_ref().clone())
 					.collect();
@@ -223,7 +223,7 @@ where
 					FilterType::PendingTransaction => {
 						let previous_hashes = pool_item.pending_transaction_hashes;
 						let txs_ready = self
-							.graph
+							.pool
 							.ready()
 							.map(|in_pool_tx| in_pool_tx.data().as_ref().clone())
 							.collect();
@@ -565,7 +565,7 @@ where
 		_ => vec![],
 	};
 	let topics = filter
-		.topics
+		.topics()
 		.iter()
 		.map(|flat| match flat {
 			VariadicValue::Single(item) => vec![*item],
@@ -692,7 +692,7 @@ where
 
 	// Pre-calculate BloomInput for reuse.
 	let address_bloom_filter = FilteredParams::address_bloom_filter(&filter.address);
-	let topics_bloom_filter = FilteredParams::topics_bloom_filter(&filter.topics);
+	let topics_bloom_filter = FilteredParams::topics_bloom_filter(&filter.topics());
 
 	let mut logs = Vec::new();
 	while current_number <= to {
@@ -763,7 +763,7 @@ pub(crate) fn filter_block_logs(
 				removed: false,
 			};
 
-			let topics_match = filter.topics.is_empty() || params.filter_topics(&log.topics);
+			let topics_match = filter.topics().is_empty() || params.filter_topics(&log.topics);
 			let address_match = filter
 				.address
 				.as_ref()
