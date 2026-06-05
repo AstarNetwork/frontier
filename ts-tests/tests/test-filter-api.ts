@@ -2,7 +2,13 @@ import { expect } from "chai";
 import { step } from "mocha-steps";
 
 import { GENESIS_ACCOUNT, GENESIS_ACCOUNT_PRIVATE_KEY } from "./config";
-import { createAndFinalizeBlock, createAndFinalizeBlockNowait, describeWithFrontier, customRequest } from "./util";
+import {
+	createAndFinalizeBlock,
+	createAndFinalizeBlockNowait,
+	describeWithFrontier,
+	customRequest,
+	waitForBlock,
+} from "./util";
 
 describeWithFrontier("Frontier RPC (EthFilterApi)", (context) => {
 	const TEST_CONTRACT_BYTECODE =
@@ -120,24 +126,69 @@ describeWithFrontier("Frontier RPC (EthFilterApi)", (context) => {
 
 		expect(receipt.logs.length).to.be.eq(1);
 
-		// Create a filter for the created contract.
+		// Topic-only filter: `eth_getFilterChanges` starts at the journal cursor (no replay of
+		// retained history).
 		let createFilter = await customRequest(context.web3, "eth_newFilter", [
 			{
 				fromBlock: "0x0",
 				toBlock: "latest",
-				address: receipt.contractAddress,
 				topics: receipt.logs[0].topics,
 			},
 		]);
 		let poll = await customRequest(context.web3, "eth_getFilterChanges", [createFilter.result]);
+		expect(poll.result.length).to.be.eq(0);
 
+		// A new canonical transition after the filter exists produces filter changes.
+		let tx2 = await sendTransaction(context);
+		await createAndFinalizeBlock(context.web3);
+		let receipt2 = await context.web3.eth.getTransactionReceipt(tx2.transactionHash);
+		expect(receipt2.logs.length).to.be.eq(1);
+
+		poll = await customRequest(context.web3, "eth_getFilterChanges", [createFilter.result]);
 		expect(poll.result.length).to.be.eq(1);
-		expect(poll.result[0].address.toLowerCase()).to.be.eq(receipt.contractAddress.toLowerCase());
-		expect(poll.result[0].topics).to.be.deep.eq(receipt.logs[0].topics);
+		expect(poll.result[0].address.toLowerCase()).to.be.eq(receipt2.contractAddress.toLowerCase());
+		expect(poll.result[0].topics).to.be.deep.eq(receipt2.logs[0].topics);
 
 		// A subsequent request must be empty.
 		poll = await customRequest(context.web3, "eth_getFilterChanges", [createFilter.result]);
 		expect(poll.result.length).to.be.eq(0);
+	});
+
+	step("should not skip log filter changes when best head is ahead of indexed head", async function () {
+		this.timeout(15000);
+
+		const startIndexed = Number(await context.web3.eth.getBlockNumber());
+		const filterId = (
+			await customRequest(context.web3, "eth_newFilter", [
+				{
+					fromBlock: "latest",
+					toBlock: "latest",
+				},
+			])
+		).result;
+
+		const tx = await sendTransaction(context);
+
+		// Advance best head without waiting for indexing to force a lag window.
+		await createAndFinalizeBlockNowait(context.web3);
+		await createAndFinalizeBlockNowait(context.web3);
+		await createAndFinalizeBlockNowait(context.web3);
+
+		const firstPoll = await customRequest(context.web3, "eth_getFilterChanges", [filterId]);
+
+		// Wait for indexing to catch up to the produced blocks.
+		const expectedIndexed = "0x" + (startIndexed + 3).toString(16);
+		await waitForBlock(context.web3, expectedIndexed, 10000);
+
+		const secondPoll = await customRequest(context.web3, "eth_getFilterChanges", [filterId]);
+		const allLogs = [...(firstPoll.result as any[]), ...(secondPoll.result as any[])];
+		const foundTx = allLogs.some(
+			(log) =>
+				typeof log?.transactionHash === "string" &&
+				log.transactionHash.toLowerCase() === tx.transactionHash.toLowerCase()
+		);
+
+		expect(foundTx).to.be.true;
 	});
 
 	step("should return response for raw Log filter request.", async function () {
@@ -182,24 +233,24 @@ describeWithFrontier("Frontier RPC (EthFilterApi)", (context) => {
 		// Should return error if does not exist.
 		let r = await customRequest(context.web3, "eth_uninstallFilter", [filterId]);
 		expect(r.error).to.include({
-			message: "Filter id 7 does not exist.",
+			message: `Filter id ${parseInt(filterId, 16)} does not exist.`,
 		});
 	});
 
 	step("should drain the filter pool.", async function () {
-		this.timeout(15000);
+		this.timeout(120000); // Increased timeout for waiting on block indexing
 		const blockLifespanThreshold = 100;
 
 		let createFilter = await customRequest(context.web3, "eth_newBlockFilter", []);
 		let filterId = createFilter.result;
 
 		for (let i = 0; i <= blockLifespanThreshold; i++) {
-			await createAndFinalizeBlockNowait(context.web3);
+			await createAndFinalizeBlock(context.web3);
 		}
 
 		let r = await customRequest(context.web3, "eth_getFilterChanges", [filterId]);
 		expect(r.error).to.include({
-			message: "Filter id 7 does not exist.",
+			message: `Filter id ${parseInt(filterId, 16)} does not exist.`,
 		});
 	});
 

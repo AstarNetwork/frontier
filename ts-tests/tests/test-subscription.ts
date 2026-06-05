@@ -53,21 +53,45 @@ describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
 		expect(subscriptionId).not.empty;
 	}).timeout(20000);
 
-	step("should get newHeads stream", async function (done) {
+	step("should get newHeads stream", async function () {
+		const latestBefore = Number((await context.web3.eth.getBlock("latest")).number);
+		const expectedNumber = latestBefore + 1;
+
 		subscription = context.web3.eth.subscribe("newBlockHeaders", function (error, result) {});
-		let data = null;
-		let dataResolve = null;
-		let dataPromise = new Promise((resolve) => {
-			dataResolve = resolve;
+
+		await new Promise<void>((resolve, reject) => {
+			const timer = setTimeout(() => reject(new Error("Timed out waiting for subscription connection")), 10000);
+			subscription.on("connected", function () {
+				clearTimeout(timer);
+				resolve();
+			});
+			subscription.on("error", function (error: any) {
+				clearTimeout(timer);
+				reject(error);
+			});
 		});
-		subscription.on("data", function (d: any) {
-			data = d;
-			subscription.unsubscribe();
-			dataResolve();
+
+		const dataPromise = new Promise<any>((resolve, reject) => {
+			const timer = setTimeout(() => reject(new Error("Timed out waiting for newHeads data")), 30000);
+			subscription.on("data", function (d: any) {
+				// Some providers may emit a stale first header right after subscribing.
+				if (Number(d.number) < expectedNumber) {
+					return;
+				}
+				clearTimeout(timer);
+				resolve(d);
+			});
+			subscription.on("error", function (error: any) {
+				clearTimeout(timer);
+				reject(error);
+			});
 		});
 
 		await createAndFinalizeBlock(context.web3);
-		await dataPromise;
+		const data = await dataPromise;
+		subscription.unsubscribe();
+
+		const block = await context.web3.eth.getBlock(expectedNumber);
 
 		expect(data).to.include({
 			author: "0x0000000000000000000000000000000000000000",
@@ -76,14 +100,13 @@ describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
 			logsBloom:
 				"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 			miner: "0x0000000000000000000000000000000000000000",
-			number: 2,
+			number: expectedNumber,
 			receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 			sha3Uncles: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
 			transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 		});
 		expect(data.nonce).to.eql("0x0000000000000000");
-
-		done();
+		expect(data.hash).to.eq(block.hash);
 	}).timeout(40000);
 
 	step("should get newPendingTransactions stream", async function (done) {
@@ -112,7 +135,7 @@ describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
 		done();
 	}).timeout(20000);
 
-	step("should subscribe to all logs", async function (done) {
+	step("should subscribe to all logs", async function () {
 		subscription = context.web3.eth.subscribe("logs", {}, function (error, result) {});
 
 		await new Promise<void>((resolve) => {
@@ -121,23 +144,28 @@ describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
 			});
 		});
 
-		const tx = await sendTransaction(context);
+		await sendTransaction(context);
 		let data = null;
-		let dataResolve = null;
-		let dataPromise = new Promise((resolve) => {
-			dataResolve = resolve;
-		});
-		subscription.on("data", function (d: any) {
-			data = d;
-			logsGenerated += 1;
-			dataResolve();
+		const dataPromise = new Promise<void>((resolve, reject) => {
+			const timer = setTimeout(() => reject(new Error("Timed out waiting for logs subscription event")), 20000);
+			subscription.on("data", function (d: any) {
+				data = d;
+				logsGenerated += 1;
+				clearTimeout(timer);
+				resolve();
+			});
+			subscription.on("error", function (error: any) {
+				clearTimeout(timer);
+				reject(error);
+			});
 		});
 
+		// Ensure a block is sealed after the tx enters the pool and wait for subscription payload.
 		await createAndFinalizeBlock(context.web3);
 		await dataPromise;
 
 		subscription.unsubscribe();
-		const block = await context.web3.eth.getBlock("latest");
+		const block = await context.web3.eth.getBlock(data.blockNumber);
 		expect(data).to.include({
 			blockHash: block.hash,
 			blockNumber: block.number,
@@ -148,7 +176,6 @@ describeWithFrontierWs("Frontier RPC (Subscription)", (context) => {
 			transactionIndex: 0,
 			transactionLogIndex: "0x0",
 		});
-		done();
 	}).timeout(20000);
 
 	step("should subscribe to logs by multiple addresses", async function (done) {

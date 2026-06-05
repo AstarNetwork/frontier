@@ -48,7 +48,7 @@ pub enum WorkerCommand<Block: BlockT<Hash = H256>> {
 		block_hash: H256,
 		/// Whether this block was the new best at import time.
 		is_new_best: bool,
-		reorg_info: Option<ReorgInfo<Block>>,
+		reorg_info: Option<Arc<ReorgInfo<Block>>>,
 	},
 	/// Canonicalize the enacted and retracted blocks reported via import notifications.
 	Canonicalize {
@@ -251,7 +251,7 @@ where
 								"🔀  Re-org happened at new best {}, proceeding to canonicalize db",
 								notification.hash
 							);
-							let info = ReorgInfo::from_tree_route(tree_route, notification.hash);
+							let info = Arc::new(ReorgInfo::from_tree_route(tree_route, notification.hash));
 							// Note: new_best is handled separately by IndexBestBlock.
 							tx.send(WorkerCommand::Canonicalize {
 								common: info.common_ancestor,
@@ -1084,19 +1084,27 @@ mod test {
 			futures_timer::Delay::new(Duration::from_millis(100)).await;
 		}
 
-		// Test the reorged chain is correctly indexed.
-		let res = sqlx::query("SELECT substrate_block_hash, is_canon, block_number FROM blocks")
-			.fetch_all(&pool)
-			.await
-			.expect("test query result")
-			.iter()
-			.map(|row| {
-				let substrate_block_hash = H256::from_slice(&row.get::<Vec<u8>, _>(0)[..]);
-				let is_canon = row.get::<i32, _>(1);
-				let block_number = row.get::<i32, _>(2);
-				(substrate_block_hash, is_canon, block_number)
-			})
-			.collect::<Vec<(H256, i32, i32)>>();
+		// Wait for the indexer to process all 20 blocks (async worker may lag).
+		let timeout = std::time::Instant::now() + Duration::from_secs(5);
+		let res = loop {
+			let rows =
+				sqlx::query("SELECT substrate_block_hash, is_canon, block_number FROM blocks")
+					.fetch_all(&pool)
+					.await
+					.expect("test query result")
+					.iter()
+					.map(|row| {
+						let substrate_block_hash = H256::from_slice(&row.get::<Vec<u8>, _>(0)[..]);
+						let is_canon = row.get::<i32, _>(1);
+						let block_number = row.get::<i32, _>(2);
+						(substrate_block_hash, is_canon, block_number)
+					})
+					.collect::<Vec<(H256, i32, i32)>>();
+			if rows.len() == 20 || std::time::Instant::now() >= timeout {
+				break rows;
+			}
+			futures_timer::Delay::new(Duration::from_millis(50)).await;
+		};
 
 		// 20 blocks in total
 		assert_eq!(res.len(), 20);

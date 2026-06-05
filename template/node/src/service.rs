@@ -407,6 +407,9 @@ where
 	// Everytime a new subscription is created, a new mpsc channel is added to the sink pool.
 	// The MappingSyncWorker sends through the channel on block import and the subscription emits a notification to the subscriber on receiving a message through this channel.
 	// This way we avoid race conditions when using native substrate block import notification stream.
+	fc_mapping_sync::set_max_pending_notifications_per_subscriber(
+		eth_config.pubsub_max_pending_notifications,
+	);
 	let pubsub_notification_sinks: fc_mapping_sync::EthereumBlockNotificationSinks<
 		fc_mapping_sync::EthereumBlockNotification<B>,
 	> = Default::default();
@@ -426,6 +429,7 @@ where
 		let max_past_logs = eth_config.max_past_logs;
 		let max_block_range = eth_config.max_block_range;
 		let execute_gas_limit_multiplier = eth_config.execute_gas_limit_multiplier;
+		let rpc_allow_unprotected_txs = eth_config.rpc_allow_unprotected_txs;
 		let filter_pool = filter_pool.clone();
 		let frontier_backend = frontier_backend.clone();
 		let pubsub_notification_sinks = pubsub_notification_sinks.clone();
@@ -471,9 +475,13 @@ where
 				filter_pool: filter_pool.clone(),
 				max_past_logs,
 				max_block_range,
+				logs_journal_config: crate::rpc::LogsJournalConfig::from_max_total_bytes(
+					eth_config.logs_journal_max_total_bytes,
+				),
 				fee_history_cache: fee_history_cache.clone(),
 				fee_history_cache_limit,
 				execute_gas_limit_multiplier,
+				rpc_allow_unprotected_txs,
 				forced_parent_hashes: None,
 				pending_create_inherent_data_providers,
 			};
@@ -495,6 +503,16 @@ where
 			.map_err(Into::into)
 		})
 	};
+
+	// Derive state_pruning_blocks from the node's --state-pruning so the mapping-sync
+	// worker can skip past pruned blocks during catch-up (KV backend only).
+	let state_pruning_blocks = config.state_pruning.as_ref().and_then(|mode| {
+		if let sc_service::PruningMode::Constrained(c) = mode {
+			c.max_blocks.map(u64::from)
+		} else {
+			None
+		}
+	});
 
 	let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
 		config,
@@ -521,6 +539,7 @@ where
 		storage_override,
 		fee_history_cache,
 		fee_history_cache_limit,
+		state_pruning_blocks,
 		sync_service.clone(),
 		pubsub_notification_sinks,
 	)

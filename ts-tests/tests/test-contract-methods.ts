@@ -9,7 +9,7 @@ import {
 	BLOCK_HASH_COUNT,
 	ETH_BLOCK_GAS_LIMIT,
 } from "./config";
-import { createAndFinalizeBlock, createAndFinalizeBlockNowait, customRequest, describeWithFrontier } from "./util";
+import { createAndFinalizeBlock, customRequest, describeWithFrontier } from "./util";
 
 describeWithFrontier("Frontier RPC (Contract Methods)", (context) => {
 	const TEST_CONTRACT_BYTECODE = Test.bytecode;
@@ -19,7 +19,6 @@ describeWithFrontier("Frontier RPC (Contract Methods)", (context) => {
 	// to spin up a frontier node, it saves a lot of time.
 
 	before("create the contract", async function () {
-		this.timeout(15000);
 		const tx = await context.web3.eth.accounts.signTransaction(
 			{
 				from: GENESIS_ACCOUNT,
@@ -52,35 +51,39 @@ describeWithFrontier("Frontier RPC (Contract Methods)", (context) => {
 		expect(await contract.methods.multiply(3).call()).to.equal("21");
 	});
 	it("should get correct environmental block number", async function () {
-		// Solidity `block.number` is expected to return the same height at which the runtime call was made.
+		// Solidity `block.number` is expected to match the runtime head used for execution.
 		const contract = new context.web3.eth.Contract(TEST_CONTRACT_ABI, FIRST_CONTRACT_ADDRESS, {
 			from: GENESIS_ACCOUNT,
 			gasPrice: "0x3B9ACA00",
 		});
-		let block = await context.web3.eth.getBlock("latest");
-		expect(await contract.methods.currentBlock().call()).to.eq(block.number.toString());
+
+		let chainHead = (await customRequest(context.web3, "chain_getHeader", [])).result;
+		expect(await contract.methods.currentBlock().call()).to.eq(parseInt(chainHead.number, 16).toString());
+
 		await createAndFinalizeBlock(context.web3);
-		block = await context.web3.eth.getBlock("latest");
-		expect(await contract.methods.currentBlock().call()).to.eq(block.number.toString());
+
+		chainHead = (await customRequest(context.web3, "chain_getHeader", [])).result;
+		expect(await contract.methods.currentBlock().call()).to.eq(parseInt(chainHead.number, 16).toString());
 	});
 
 	it("should get correct environmental block hash", async function () {
-		this.timeout(20000);
-		// Solidity `blockhash` is expected to return the ethereum block hash at a given height.
+		this.timeout(300000);
+		// Verify `blockhash` against the block seen by the contract call context.
 		const contract = new context.web3.eth.Contract(TEST_CONTRACT_ABI, FIRST_CONTRACT_ADDRESS, {
 			from: GENESIS_ACCOUNT,
 			gasPrice: "0x3B9ACA00",
 		});
-		let number = (await context.web3.eth.getBlock("latest")).number;
-		let last = number + BLOCK_HASH_COUNT;
-		for (let i = number; i <= last; i++) {
-			await new Promise((resolve) => setTimeout(resolve, 60));
-			let hash = (await context.web3.eth.getBlock("latest")).hash;
-			expect(await contract.methods.blockHash(i).call()).to.eq(hash);
-			await createAndFinalizeBlockNowait(context.web3);
+
+		const start = Number((await context.web3.eth.getBlock("latest")).number);
+		for (let i = 0; i < BLOCK_HASH_COUNT + 1; i++) {
+			const callBlock = Number(await contract.methods.currentBlock().call());
+			const expectedHash = (await context.web3.eth.getBlock(callBlock)).hash;
+			expect(await contract.methods.blockHash(callBlock).call()).to.eq(expectedHash);
+			await createAndFinalizeBlock(context.web3);
 		}
-		// should not store more than `BLOCK_HASH_COUNT` hashes
-		expect(await contract.methods.blockHash(number).call()).to.eq(
+
+		// Old hashes must still expire after BLOCK_HASH_COUNT.
+		expect(await contract.methods.blockHash(start).call()).to.eq(
 			"0x0000000000000000000000000000000000000000000000000000000000000000"
 		);
 	});

@@ -188,13 +188,22 @@ where
 		R: Default,
 	{
 		// Used to record the external costs in the evm through the StackState implementation
-		let mut maybe_weight_info =
-			WeightInfo::new_from_weight_limit(weight_limit, proof_size_base_cost).map_err(
-				|_| RunnerError {
-					error: Error::<T>::GasLimitTooLow,
-					weight,
-				},
-			)?;
+		let maybe_weight_info =
+			match WeightInfo::new_from_weight_limit(weight_limit, proof_size_base_cost) {
+				Ok(weight_info) => weight_info,
+				Err(_) => {
+					return Ok(ExecutionInfoV2 {
+						exit_reason: ExitError::OutOfGas.into(),
+						value: Default::default(),
+						used_gas: fp_evm::UsedGas {
+							standard: gas_limit.into(),
+							effective: gas_limit.into(),
+						},
+						weight_info: None,
+						logs: Default::default(),
+					})
+				}
+			};
 		// The precompile check is only used for transactional invocations. However, here we always
 		// execute the check, because the check has side effects.
 		match precompiles.is_precompile(source, gas_limit) {
@@ -224,31 +233,24 @@ where
 		// Exception: Allow transactions from EOAs whose code is a valid delegation indicator (0xef0100 || address).
 		if is_transactional {
 			// Check if the account has code deployed
-			let metadata = <AccountCodesMetadata<T>>::get(source).unwrap_or_default();
-			if metadata.size > 0 {
-				// Account has code, check if it's a valid delegation
-				let is_delegation = metadata.size
-					== evm::delegation::EIP_7702_DELEGATION_SIZE as u64
-					&& <AccountCodes<T>>::get(source)
-						.starts_with(evm::delegation::EIP_7702_DELEGATION_PREFIX);
+			if let Some(metadata) = <AccountCodesMetadata<T>>::get(source) {
+				if metadata.size > 0 {
+					// Account has code, check if it's a valid delegation
+					let is_delegation = metadata.size
+						== evm::delegation::EIP_7702_DELEGATION_SIZE as u64
+						&& <AccountCodes<T>>::get(source)
+							.starts_with(evm::delegation::EIP_7702_DELEGATION_PREFIX);
 
-				if !is_delegation {
-					return Err(RunnerError {
-						error: Error::<T>::TransactionMustComeFromEOA,
-						weight,
-					});
+					if !is_delegation {
+						return Err(RunnerError {
+							error: Error::<T>::TransactionMustComeFromEOA,
+							weight,
+						});
+					}
 				}
 			}
 		}
 
-		if let Some(ref mut weight_info) = maybe_weight_info {
-			weight_info
-				.try_record_proof_size_or_fail(ACCOUNT_CODES_METADATA_PROOF_SIZE)
-				.map_err(|_| RunnerError {
-					error: Error::<T>::GasLimitTooLow,
-					weight,
-				})?;
-		}
 		let total_fee_per_gas = if is_transactional {
 			match (max_fee_per_gas, max_priority_fee_per_gas) {
 				// Zero max_fee_per_gas for validated transactional calls exist in XCM -> EVM
@@ -354,13 +356,6 @@ where
 						);
 						estimated_proof_size
 					} else {
-						log::debug!(
-							target: "evm",
-							"Proof size overestimation detected! (estimated: {}, actual: {}, diff: {})",
-							estimated_proof_size,
-							actual_proof_size,
-							estimated_proof_size.saturating_sub(actual_proof_size),
-						);
 						actual_proof_size
 					}
 				} else {
@@ -492,9 +487,11 @@ where
 			fp_evm::CheckEvmTransactionConfig {
 				evm_config,
 				block_gas_limit: T::BlockGasLimit::get(),
+				transaction_gas_limit: T::TransactionGasLimit::get(),
 				base_fee,
 				chain_id: T::ChainId::get(),
 				is_transactional,
+				allow_unprotected_txs: true,
 			},
 			fp_evm::CheckEvmTransactionInput {
 				chain_id: Some(T::ChainId::get()),
@@ -1026,6 +1023,7 @@ impl<'vicinity, 'config, T: Config> SubstrateStackState<'vicinity, 'config, T> {
 		address: H160,
 		weight_info: &mut WeightInfo,
 		recorded: &mut Recorded,
+		create_contract_limit: u64,
 	) -> Result<(), ExitError> {
 		let maybe_record = !recorded.account_codes.contains(&address);
 		// Skip if the address has been already recorded this block
@@ -1034,17 +1032,26 @@ impl<'vicinity, 'config, T: Config> SubstrateStackState<'vicinity, 'config, T> {
 			// Transfers to EOAs with standard 21_000 gas limit are able to
 			// pay for this pov size.
 			weight_info.try_record_proof_size_or_fail(IS_EMPTY_CHECK_PROOF_SIZE)?;
-
-			// We record metadata read as well
-			weight_info.try_record_proof_size_or_fail(ACCOUNT_CODES_METADATA_PROOF_SIZE)?;
-
-			if let Some(meta) = <AccountCodesMetadata<T>>::get(address) {
-				weight_info.try_record_proof_size_or_fail(meta.size)?;
+			if <AccountCodes<T>>::decode_len(address).unwrap_or(0) == 0 {
+				return Ok(());
 			}
 
+			weight_info.try_record_proof_size_or_fail(ACCOUNT_CODES_METADATA_PROOF_SIZE)?;
+			if let Some(meta) = <AccountCodesMetadata<T>>::get(address) {
+				weight_info.try_record_proof_size_or_fail(meta.size)?;
+			} else {
+				weight_info.try_record_proof_size_or_fail(create_contract_limit)?;
+
+				let actual_size = Pallet::<T>::account_code_metadata(address).size;
+				if actual_size > create_contract_limit {
+					fp_evm::set_storage_oog();
+					return Err(ExitError::OutOfGas);
+				}
+				// Refund unused proof size
+				weight_info.refund_proof_size(create_contract_limit.saturating_sub(actual_size));
+			}
 			recorded.account_codes.push(address);
 		}
-
 		Ok(())
 	}
 }
@@ -1117,11 +1124,7 @@ where
 	}
 
 	fn code(&self, address: H160) -> Vec<u8> {
-		if AccountCodesMetadata::<T>::contains_key(address) {
-			<AccountCodes<T>>::get(address)
-		} else {
-			Default::default()
-		}
+		<AccountCodes<T>>::get(address)
 	}
 
 	fn storage(&self, address: H160, index: H256) -> H256 {
@@ -1337,6 +1340,12 @@ where
 	}
 
 	fn record_external_operation(&mut self, op: evm::ExternalOperation) -> Result<(), ExitError> {
+		let size_limit: u64 = self
+			.metadata()
+			.gasometer()
+			.config()
+			.create_contract_limit
+			.unwrap_or_default() as u64;
 		let (weight_info, recorded) = self.info_mut();
 
 		if let Some(weight_info) = weight_info {
@@ -1345,7 +1354,7 @@ where
 					weight_info.try_record_proof_size_or_fail(ACCOUNT_BASIC_PROOF_SIZE)?
 				}
 				ExternalOperation::AddressCodeRead(address) => {
-					Self::record_address_code_read(address, weight_info, recorded)?;
+					Self::record_address_code_read(address, weight_info, recorded, size_limit)?;
 				}
 				ExternalOperation::IsEmpty => {
 					weight_info.try_record_proof_size_or_fail(IS_EMPTY_CHECK_PROOF_SIZE)?
@@ -1364,7 +1373,7 @@ where
 					}
 				}
 				ExternalOperation::DelegationResolution(address) => {
-					Self::record_address_code_read(address, weight_info, recorded)?;
+					Self::record_address_code_read(address, weight_info, recorded, size_limit)?;
 				}
 			};
 		}
@@ -1406,6 +1415,12 @@ where
 			_ => None,
 		};
 
+		let size_limit: u64 = self
+			.metadata()
+			.gasometer()
+			.config()
+			.create_contract_limit
+			.unwrap_or_default() as u64;
 		let (weight_info, recorded) = self.info_mut();
 
 		if let Some(weight_info) = weight_info {
@@ -1424,6 +1439,16 @@ where
 
 					if let Some(meta) = <AccountCodesMetadata<T>>::get(address) {
 						weight_info.try_record_proof_size_or_fail(meta.size)?;
+					} else if let Some(remaining_proof_size) = weight_info.remaining_proof_size() {
+						let pre_size = remaining_proof_size.min(size_limit);
+						weight_info.try_record_proof_size_or_fail(pre_size)?;
+
+						let actual_size = Pallet::<T>::account_code_metadata(address).size;
+						if actual_size > pre_size {
+							return Err(ExitError::OutOfGas);
+						}
+						// Refund unused proof size
+						weight_info.refund_proof_size(pre_size.saturating_sub(actual_size));
 					}
 
 					Ok(())
