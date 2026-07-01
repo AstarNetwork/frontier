@@ -325,6 +325,38 @@ fn ensure_paritydb_has_v3_columns(db_path: &Path) -> UpgradeResult<()> {
 	Ok(())
 }
 
+#[cfg(feature = "rocksdb")]
+fn ensure_rocksdb_has_v3_columns(db_path: &Path) -> UpgradeResult<()> {
+	// If the DB already opens with v3 columns, it is already compatible.
+	{
+		let db_cfg = kvdb_rocksdb::DatabaseConfig::with_columns(V3_NUM_COLUMNS);
+		if kvdb_rocksdb::Database::open(&db_cfg, db_path).is_ok() {
+			return Ok(());
+		}
+	}
+
+	// Otherwise, attempt to add the missing column to an existing v2 (4-column) DB.
+	// First confirm the v2 DB can be opened.
+	{
+		let db_cfg = kvdb_rocksdb::DatabaseConfig::with_columns(V2_NUM_COLUMNS);
+		let _db = kvdb_rocksdb::Database::open(&db_cfg, db_path).map_err(|err| {
+			io::Error::other(format!("Failed to open rocksdb before add_column: {err}"))
+		})?;
+		// _db is dropped here; RocksDB lock released.
+	}
+
+	// Re-open with v3 columns. Setting `create_if_missing = true` propagates
+	// `create_missing_column_families = true` inside kvdb-rocksdb, which adds
+	// the new 5th column family to the existing 4-column database.
+	let mut db_cfg = kvdb_rocksdb::DatabaseConfig::with_columns(V3_NUM_COLUMNS);
+	db_cfg.create_if_missing = true;
+	kvdb_rocksdb::Database::open(&db_cfg, db_path).map_err(|err| {
+		io::Error::other(format!("Failed to add rocksdb column (v2->v3): {err}"))
+	})?;
+
+	Ok(())
+}
+
 /// Migration from version1 to version2:
 /// - The format of the Ethereum<>Substrate block mapping changed to support equivocation.
 /// - Migrating schema from One-to-one to One-to-many (EthHash: Vec<SubstrateHash>) relationship.
@@ -529,6 +561,7 @@ pub(crate) fn migrate_2_to_3_rocks_db<Block: BlockT, C: HeaderBackend<Block>>(
 	db_path: &Path,
 ) -> UpgradeResult<UpgradeVersion2To3Summary> {
 	log::info!("🔨 Running Frontier DB migration from version 2 to version 3. Please wait.");
+	ensure_rocksdb_has_v3_columns(db_path)?;
 	let mut res = UpgradeVersion2To3Summary {
 		success: 0,
 		skipped: 0,
