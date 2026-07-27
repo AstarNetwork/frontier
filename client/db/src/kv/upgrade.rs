@@ -335,24 +335,34 @@ fn ensure_rocksdb_has_v3_columns(db_path: &Path) -> UpgradeResult<()> {
 		}
 	}
 
-	// Otherwise, attempt to add the missing column to an existing v2 (4-column) DB.
-	// First confirm the v2 DB can be opened.
-	{
-		let db_cfg = kvdb_rocksdb::DatabaseConfig::with_columns(V2_NUM_COLUMNS);
-		let _db = kvdb_rocksdb::Database::open(&db_cfg, db_path).map_err(|err| {
-			io::Error::other(format!("Failed to open rocksdb before add_column: {err}"))
-		})?;
-		// _db is dropped here; RocksDB lock released.
-	}
+	// Otherwise we must add the missing 5th column family (col4 /
+	// BLOCK_NUMBER_MAPPING) to an existing v2 (4-column) database.
+	//
+	// This cannot be done through `kvdb_rocksdb::Database::open`: kvdb-rocksdb
+	// only sets RocksDB's `create_if_missing` (which creates the *database*),
+	// never `create_missing_column_families` (which creates *column families*).
+	// When asked to open an existing 4-CF database with 5 column descriptors it
+	// falls back to reopening with an empty column-family list, which RocksDB
+	// rejects with "Column families not opened: col3, col2, col1, col0".
+	//
+	// So add the column in place with the `rocksdb` crate directly, enabling
+	// `create_missing_column_families` and listing every column family
+	// kvdb-rocksdb expects. kvdb-rocksdb names its column families "col0".."colN"
+	// (it builds them as `format!("col{}", i)`), so mirror that exactly.
+	let mut opts = rocksdb::Options::default();
+	opts.create_if_missing(true);
+	opts.create_missing_column_families(true);
 
-	// Re-open with v3 columns. Setting `create_if_missing = true` propagates
-	// `create_missing_column_families = true` inside kvdb-rocksdb, which adds
-	// the new 5th column family to the existing 4-column database.
-	let mut db_cfg = kvdb_rocksdb::DatabaseConfig::with_columns(V3_NUM_COLUMNS);
-	db_cfg.create_if_missing = true;
-	kvdb_rocksdb::Database::open(&db_cfg, db_path).map_err(|err| {
+	let cf_descriptors = (0..V3_NUM_COLUMNS)
+		.map(|i| rocksdb::ColumnFamilyDescriptor::new(format!("col{i}"), rocksdb::Options::default()));
+
+	let db = rocksdb::DB::open_cf_descriptors(&opts, db_path, cf_descriptors).map_err(|err| {
 		io::Error::other(format!("Failed to add rocksdb column (v2->v3): {err}"))
 	})?;
+
+	// Flush and release the RocksDB lock before the migration reopens the
+	// database through kvdb-rocksdb.
+	drop(db);
 
 	Ok(())
 }

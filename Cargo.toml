@@ -72,6 +72,9 @@ impl-trait-for-tuples = "0.2.3"
 jsonrpsee = { version = "0.24.10" }
 jsonrpsee-core = { version = "0.24.10" }
 kvdb-rocksdb = "0.21.0"
+# Must match the exact version/feature set kvdb-rocksdb uses so Cargo unifies
+# the build and does not link librocksdb twice.
+rocksdb = { version = "0.24.0", features = ["snappy"], default-features = false }
 libsecp256k1 = { version = "0.7.2", default-features = false }
 log = { version = "0.4.27", default-features = false }
 num_enum = { version = "0.7.6", default-features = false }

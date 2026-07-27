@@ -15,6 +15,7 @@ async-trait = { workspace = true }
 ethereum = { workspace = true, features = ["with-scale"], optional = true }
 futures = { workspace = true, optional = true }
 kvdb-rocksdb = { workspace = true, optional = true }
+rocksdb = { workspace = true, optional = true }
 log = { workspace = true }
 parity-db = { workspace = true }
 parking_lot = { workspace = true }
@@ -51,6 +52,7 @@ substrate-test-runtime-client = { workspace = true }
 default = ["sql"]
 rocksdb = [
 	"kvdb-rocksdb",
+	"dep:rocksdb",
 	"sc-client-db/rocksdb",
 	"smallvec",
 ]
